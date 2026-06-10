@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>灵兽试炼：无限关卡版</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+-webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+width:100%;
+height:100%;
+overflow:hidden;
+font-family:Arial,sans-serif;
+background:#020617;
+}
+
+canvas{
+display:block;
+width:100%;
+height:100%;
+background:
+radial-gradient(circle at top,#172554 0%,#020617 70%);
+}
+
+#ui{
+position:absolute;
+inset:0;
+pointer-events:none;
+}
+
+.panel{
+position:absolute;
+left:50%;
+top:50%;
+transform:translate(-50%,-50%);
+width:min(92vw,620px);
+background:rgba(5,10,30,.92);
+border:2px solid rgba(0,255,255,.2);
+border-radius:26px;
+padding:24px;
+backdrop-filter:blur(12px);
+color:white;
+pointer-events:auto;
+box-shadow:
+0 0 35px rgba(0,255,255,.15),
+0 0 80px rgba(0,100,255,.15);
+animation:pop .45s ease;
+z-index:100;
+}
+
+@keyframes pop{
+0%{
+transform:translate(-50%,-50%) scale(.8);
+opacity:0;
+}
+100%{
+transform:translate(-50%,-50%) scale(1);
+opacity:1;
+}
+}
+
+.hidden{
+display:none;
+}
+
+.title{
+font-size:46px;
+font-weight:900;
+text-align:center;
+margin-bottom:12px;
+background:linear-gradient(90deg,#38bdf8,#818cf8,#22d3ee);
+-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;
+}
+
+.subtitle{
+text-align:center;
+line-height:1.7;
+opacity:.9;
+margin-bottom:20px;
+}
+
+.btn{
+width:100%;
+padding:16px;
+margin-top:14px;
+border:none;
+border-radius:18px;
+background:linear-gradient(135deg,#2563eb,#7c3aed);
+color:white;
+font-size:20px;
+font-weight:900;
+cursor:pointer;
+transition:.2s;
+}
+
+.btn:hover{
+transform:translateY(-2px);
+}
+
+.animal-grid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:14px;
+margin-top:15px;
+}
+
+.animal-card{
+padding:18px;
+border-radius:18px;
+background:rgba(255,255,255,.06);
+border:2px solid transparent;
+text-align:center;
+cursor:pointer;
+transition:.2s;
+user-select:none;
+pointer-events:auto;
+}
+
+.animal-card:hover{
+transform:translateY(-4px);
+border-color:#38bdf8;
+}
+
+.animal-icon{
+font-size:42px;
+margin-bottom:8px;
+}
+
+#hud{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+padding:12px;
+display:flex;
+justify-content:space-between;
+pointer-events:none;
+z-index:20;
+}
+
+.hud-left,.hud-right{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+}
+
+.hud-box{
+background:rgba(0,0,0,.45);
+padding:10px 14px;
+border-radius:14px;
+border:1px solid rgba(255,255,255,.08);
+color:white;
+font-weight:800;
+backdrop-filter:blur(8px);
+box-shadow:0 0 12px rgba(0,0,0,.2);
+}
+
+#pauseBtn,#soundBtn{
+pointer-events:auto;
+cursor:pointer;
+}
+
+#mobileControls{
+position:absolute;
+bottom:20px;
+left:0;
+width:100%;
+display:flex;
+justify-content:flex-start;
+padding-left:20px;
+pointer-events:none;
+z-index:20;
+}
+
+.pad{
+width:180px;
+height:180px;
+position:relative;
+pointer-events:auto;
+}
+
+.ctrl{
+position:absolute;
+width:58px;
+height:58px;
+border-radius:50%;
+background:rgba(255,255,255,.12);
+border:2px solid rgba(255,255,255,.12);
+display:flex;
+align-items:center;
+justify-content:center;
+color:white;
+font-size:24px;
+font-weight:900;
+backdrop-filter:blur(6px);
+user-select:none;
+touch-action:none;
+}
+
+.ctrl:active{
+transform:scale(.92);
+}
+
+.up{left:61px;top:0;}
+.down{left:61px;bottom:0;}
+.left{left:0;top:61px;}
+.right{right:0;top:61px;}
+
+.levelFlash{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+font-size:72px;
+font-weight:900;
+color:white;
+text-shadow:0 0 25px #22d3ee;
+opacity:0;
+animation:flash 1.1s ease;
+pointer-events:none;
+z-index:50;
+}
+
+@keyframes flash{
+0%{
+opacity:0;
+transform:translate(-50%,-50%) scale(.5);
+}
+20%{
+opacity:1;
+transform:translate(-50%,-50%) scale(1.1);
+}
+100%{
+opacity:0;
+transform:translate(-50%,-50%) scale(1);
+}
+}
+
+.countdown{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+font-size:120px;
+font-weight:900;
+color:white;
+text-shadow:
+0 0 25px #22d3ee,
+0 0 50px #22d3ee;
+z-index:100;
+pointer-events:none;
+animation:countAnim .9s ease;
+}
+
+@keyframes countAnim{
+0%{
+opacity:0;
+transform:translate(-50%,-50%) scale(.3);
+}
+40%{
+opacity:1;
+transform:translate(-50%,-50%) scale(1.1);
+}
+100%{
+opacity:0;
+transform:translate(-50%,-50%) scale(1);
+}
+}
+
+.floatText{
+position:absolute;
+font-weight:900;
+font-size:30px;
+color:#fde68a;
+text-shadow:0 0 10px #facc15;
+pointer-events:none;
+z-index:60;
+animation:floatUp 1s ease forwards;
+}
+
+@keyframes floatUp{
+0%{
+opacity:1;
+transform:translate(-50%,0);
+}
+100%{
+opacity:0;
+transform:translate(-50%,-70px);
+}
+}
+
+@media(min-width:900px){
+#mobileControls{
+display:none;
+}
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="ui">
+
+<div id="menu" class="panel">
+
+<div class="title">灵兽试炼</div>
+
+<div class="subtitle">
+每一局都必须重新收集「勤 勇 信 忠」。<br><br>
+
+成功后进入下一关。<br>
+下一关时间 = 上一关剩余时间 × 1.1<br><br>
+
+后面的机关会越来越疯狂。<br>
+看看你最终能冲到第几关！
+</div>
+
+<div style="font-size:24px;font-weight:900;text-align:center;margin-bottom:12px;">
+选择灵兽
+</div>
+
+<div class="animal-grid">
+
+<div class="animal-card" data-animal="🦊">
+<div class="animal-icon">🦊</div>
+勤于耕耘
+</div>
+
+<div class="animal-card" data-animal="🐱">
+<div class="animal-icon">🐱</div>
+勇于承担
+</div>
+
+<div class="animal-card" data-animal="🐰">
+<div class="animal-icon">🐰</div>
+信守承诺
+</div>
+
+<div class="animal-card" data-animal="🐼">
+<div class="animal-icon">🐼</div>
+忠诚尽意
+</div>
+
+</div>
+
+<button class="btn" id="startBtn">开始挑战</button>
+
+</div>
+
+<div id="gameOver" class="panel hidden">
+
+<div class="title">挑战结束</div>
+
+<div class="subtitle" id="resultText"></div>
+
+<button class="btn" id="retryBtn">重新开始</button>
+
+</div>
+
+<div id="hud">
+
+<div class="hud-left">
+<div class="hud-box">⏳ 时间：<span id="timeText">60</span></div>
+<div class="hud-box">⭐ 总分：<span id="scoreText">0</span></div>
+<div class="hud-box">🧩 关卡：<span id="levelText">1</span></div>
+</div>
+
+<div class="hud-right">
+<div class="hud-box">勤勇信忠：<span id="collectText">----</span></div>
+<div class="hud-box">📦 剩余：<span id="remainText">4</span></div>
+<div class="hud-box">⚡ 难度：<span id="difficultyText">1</span></div>
+<div class="hud-box" id="pauseBtn">⏸</div>
+</div>
+
+</div>
+
+<div id="mobileControls">
+
+<div class="pad">
+<div class="ctrl up">▲</div>
+<div class="ctrl down">▼</div>
+<div class="ctrl left">◀</div>
+<div class="ctrl right">▶</div>
+</div>
+
+</div>
+
+</div>
+
+<script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+
+let w,h,dpr;
+
+function resize(){
+dpr=window.devicePixelRatio||1;
+w=innerWidth;
+h=innerHeight;
+canvas.width=w*dpr;
+canvas.height=h*dpr;
+ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+resize();
+addEventListener("resize",resize);
+
+const menu=document.getElementById("menu");
+const gameOver=document.getElementById("gameOver");
+
+const timeText=document.getElementById("timeText");
+const scoreText=document.getElementById("scoreText");
+const levelText=document.getElementById("levelText");
+const collectText=document.getElementById("collectText");
+const remainText=document.getElementById("remainText");
+const difficultyText=document.getElementById("difficultyText");
+
+let selectedAnimal="🦊";
+
+/* 修复角色无法选择 BUG */
+const animalCards=document.querySelectorAll(".animal-card");
+
+if(animalCards[0]){
+animalCards[0].style.borderColor="#38bdf8";
+animalCards[0].style.boxShadow="0 0 20px rgba(56,189,248,.5)";
+}
+
+animalCards.forEach(card=>{
+
+card.addEventListener("click",()=>{
+
+animalCards.forEach(c=>{
+
+c.style.borderColor="transparent";
+c.style.boxShadow="none";
+
+});
+
+card.style.borderColor="#38bdf8";
+card.style.boxShadow="0 0 20px rgba(56,189,248,.5)";
+
+selectedAnimal=card.dataset.animal;
+
+});
+
+});
+
+let player=null;
+
+let letters=[];
+let lasers=[];
+let tiles=[];
+let particles=[];
+let trails=[];
+
+let keys={};
+
+let gameState="menu";
+
+let score=0;
+let currentLevel=1;
+let timeLeft=60;
+
+let collected=[];
+
+let paused=false;
+
+const targetLetters=["勤","勇","信","忠"];
+
+document.getElementById("startBtn").onclick=()=>{
+
+menu.classList.add("hidden");
+
+startLevel(60);
+
+};
+
+document.getElementById("retryBtn").onclick=()=>{
+
+location.reload();
+
+};
+
+document.getElementById("pauseBtn").onclick=()=>{
+
+paused=!paused;
+
+document.getElementById("pauseBtn").innerHTML=
+paused?"▶":"⏸";
+
+};
+
+function playSound(name){
+}
+
+function showCountdown(callback){
+
+gameState="countdown";
+
+const arr=["3","2","1","开始！"];
+
+let i=0;
+
+function next(){
+
+if(i>=arr.length){
+
+callback();
+return;
+
+}
+
+const div=document.createElement("div");
+
+div.className="countdown";
+
+div.innerHTML=arr[i];
+
+document.body.appendChild(div);
+
+setTimeout(()=>{
+
+div.remove();
+
+i++;
+
+next();
+
+},700);
+
+}
+
+next();
+
+}
+
+function createFloatingText(text,x,y){
+
+const div=document.createElement("div");
+
+div.className="floatText";
+
+div.innerHTML=text;
+
+div.style.left=x+"px";
+div.style.top=y+"px";
+
+document.body.appendChild(div);
+
+setTimeout(()=>{
+div.remove();
+},1000);
+
+}
+
+function resetLevelObjects(){
+
+letters=[];
+lasers=[];
+tiles=[];
+particles=[];
+trails=[];
+
+}
+
+function startLevel(startTime){
+
+timeLeft=startTime;
+
+collected=[];
+
+resetLevelObjects();
+
+player={
+x:w/2,
+y:h/2,
+r:26,
+emoji:selectedAnimal,
+speed:4+Math.min(currentLevel*.12,2.5),
+invincible:0
+};
+
+spawnLetters();
+spawnLasers();
+spawnTiles();
+
+showLevelText();
+
+showCountdown(()=>{
+gameState="playing";
+});
+
+}
+
+function showLevelText(){
+
+const flash=document.createElement("div");
+
+flash.className="levelFlash";
+
+flash.innerHTML="第 "+currentLevel+" 关";
+
+document.body.appendChild(flash);
+
+setTimeout(()=>{
+flash.remove();
+},1200);
+
+}
+
+function safePosition(){
+
+let x,y;
+
+do{
+
+x=100+Math.random()*(w-200);
+y=100+Math.random()*(h-200);
+
+}while(Math.hypot(x-w/2,y-h/2)<180);
+
+return {x,y};
+
+}
+
+function spawnLetters(){
+
+letters=[];
+
+targetLetters.forEach(c=>{
+
+const pos=safePosition();
+
+letters.push({
+char:c,
+x:pos.x,
+y:pos.y,
+r:28,
+pulse:Math.random()*10
+});
+
+});
+
+}
+
+function spawnLasers(){
+
+lasers=[];
+
+const amount=Math.min(2+currentLevel,14);
+
+for(let i=0;i<amount;i++){
+
+const pos=safePosition();
+
+lasers.push({
+x:pos.x,
+y:pos.y,
+len:150+Math.random()*220,
+angle:Math.random()*Math.PI*2,
+speed:Math.min(.006+(currentLevel*.0004),.02),
+moveX:(Math.random()-.5)*(1.5+currentLevel*.02),
+moveY:(Math.random()-.5)*(1.5+currentLevel*.02)
+});
+
+}
+
+}
+
+function spawnTiles(){
+
+tiles=[];
+
+const amount=Math.min(3+currentLevel,16);
+
+for(let i=0;i<amount;i++){
+
+const pos=safePosition();
+
+tiles.push({
+x:pos.x,
+y:pos.y,
+size:60,
+timer:Math.random()*120,
+active:true
+});
+
+}
+
+}
+
+function nextLevel(){
+
+const remain=Math.max(8,timeLeft);
+
+const nextTime=Math.min(remain*1.1,180);
+
+currentLevel++;
+
+collected=[];
+
+resetLevelObjects();
+
+spawnLetters();
+spawnLasers();
+spawnTiles();
+
+timeLeft=nextTime;
+
+player.x=w/2;
+player.y=h/2;
+player.invincible=60;
+
+showLevelText();
+
+createFloatingText("关卡完成！",w/2,h/2);
+
+showCountdown(()=>{
+gameState="playing";
+});
+
+}
+
+function endGame(){
+
+gameState="end";
+
+gameOver.classList.remove("hidden");
+
+document.getElementById("resultText").innerHTML=
+`
+你到达了第 ${currentLevel} 关！<br><br>
+最终积分：${score}<br><br>
+后面的机关已经越来越疯狂了！
+`;
+
+}
+
+function updateHUD(){
+
+timeText.textContent=Math.ceil(timeLeft);
+
+scoreText.textContent=score;
+
+levelText.textContent=currentLevel;
+
+collectText.textContent=
+targetLetters.map(c=>
+collected.includes(c)?c:"-"
+).join("");
+
+remainText.textContent=4-collected.length;
+
+difficultyText.textContent=
+Math.min(10,Math.floor(currentLevel/2)+1);
+
+}
+
+addEventListener("keydown",e=>{
+keys[e.key.toLowerCase()]=true;
+});
+
+addEventListener("keyup",e=>{
+keys[e.key.toLowerCase()]=false;
+});
+
+function clearKeys(){
+
+Object.keys(keys).forEach(k=>{
+keys[k]=false;
+});
+
+}
+
+window.addEventListener("blur",clearKeys);
+
+function bindMobile(cls,key){
+
+const el=document.querySelector(cls);
+
+el.ontouchstart=e=>{
+e.preventDefault();
+keys[key]=true;
+};
+
+el.ontouchend=e=>{
+e.preventDefault();
+keys[key]=false;
+};
+
+el.ontouchcancel=e=>{
+e.preventDefault();
+keys[key]=false;
+};
+
+}
+
+bindMobile(".up","up");
+bindMobile(".down","down");
+bindMobile(".left","left");
+bindMobile(".right","right");
+
+function explode(x,y,color,count=20){
+
+for(let i=0;i<count;i++){
+
+particles.push({
+x,y,
+vx:(Math.random()-.5)*7,
+vy:(Math.random()-.5)*7,
+life:40+Math.random()*30,
+size:2+Math.random()*4,
+color
+});
+
+}
+
+}
+
+function damagePlayer(amount,color){
+
+if(player.invincible>0)return;
+
+player.invincible=60;
+
+explode(player.x,player.y,color,40);
+
+score=Math.max(0,score-amount);
+
+player.x=w/2;
+player.y=h/2;
+
+}
+
+function update(){
+
+requestAnimationFrame(update);
+
+ctx.clearRect(0,0,w,h);
+
+drawBackground();
+
+if(gameState==="playing"&&!paused){
+
+timeLeft-=1/60;
+
+if(timeLeft<=0){
+
+timeLeft=0;
+
+endGame();
+
+}
+
+if(player.invincible>0){
+player.invincible--;
+}
+
+movePlayer();
+
+updateLasers();
+
+updateTiles();
+
+checkLetters();
+
+updateParticles();
+
+updateTrails();
+
+updateHUD();
+
+}
+
+drawTiles();
+drawLetters();
+drawLasers();
+drawTrails();
+drawParticles();
+drawPlayer();
+
+}
+
+function movePlayer(){
+
+let dx=0;
+let dy=0;
+
+if(keys["w"]||keys["arrowup"]||keys["up"])dy--;
+if(keys["s"]||keys["arrowdown"]||keys["down"])dy++;
+if(keys["a"]||keys["arrowleft"]||keys["left"])dx--;
+if(keys["d"]||keys["arrowright"]||keys["right"])dx++;
+
+const len=Math.hypot(dx,dy)||1;
+
+player.x+=dx/len*player.speed;
+player.y+=dy/len*player.speed;
+
+player.x=Math.max(player.r,Math.min(w-player.r,player.x));
+player.y=Math.max(player.r,Math.min(h-player.r,player.y));
+
+trails.push({
+x:player.x,
+y:player.y,
+life:20
+});
+
+if(trails.length>30){
+trails.shift();
+}
+
+tiles.forEach(t=>{
+
+if(
+!t.active &&
+player.x>t.x &&
+player.x<t.x+t.size &&
+player.y>t.y &&
+player.y<t.y+t.size
+){
+
+damagePlayer(80,"#ef4444");
+
+}
+
+});
+
+}
+
+function updateLasers(){
+
+lasers.forEach(l=>{
+
+l.angle+=l.speed;
+
+l.x+=l.moveX;
+l.y+=l.moveY;
+
+if(l.x<0||l.x>w)l.moveX*=-1;
+if(l.y<0||l.y>h)l.moveY*=-1;
+
+const x2=l.x+Math.cos(l.angle)*l.len;
+const y2=l.y+Math.sin(l.angle)*l.len;
+
+const d=distanceToSegment(
+player.x,player.y,
+l.x,l.y,
+x2,y2
+);
+
+if(d<16){
+
+damagePlayer(120,"#ff0066");
+
+}
+
+});
+
+}
+
+function updateTiles(){
+
+tiles.forEach(t=>{
+
+t.timer++;
+
+const limit=Math.max(45,90-currentLevel*2);
+
+if(t.timer>limit){
+
+t.timer=0;
+
+t.active=!t.active;
+
+}
+
+});
+
+}
+
+function checkLetters(){
+
+if(letters.length===0&&collected.length<4){
+
+spawnLetters();
+
+}
+
+letters=letters.filter(l=>{
+
+l.pulse+=0.1;
+
+const d=Math.hypot(
+player.x-l.x,
+player.y-l.y
+);
+
+if(d<player.r+l.r){
+
+if(!collected.includes(l.char)){
+
+collected.push(l.char);
+
+score+=150+(currentLevel*20);
+
+explode(l.x,l.y,"#22d3ee",55);
+
+createFloatingText(
+"+"+(150+(currentLevel*20)),
+l.x,
+l.y
+);
+
+playSound("collect");
+
+}
+
+return false;
+
+}
+
+return true;
+
+});
+
+if(collected.length===4){
+
+score+=Math.floor(timeLeft*15);
+
+nextLevel();
+
+}
+
+}
+
+function updateParticles(){
+
+particles=particles.filter(p=>{
+
+p.x+=p.vx;
+p.y+=p.vy;
+
+p.life--;
+
+return p.life>0;
+
+});
+
+}
+
+function updateTrails(){
+
+trails=trails.filter(t=>{
+
+t.life--;
+
+return t.life>0;
+
+});
+
+}
+
+function drawBackground(){
+
+for(let i=0;i<90;i++){
+
+ctx.fillStyle="rgba(255,255,255,.05)";
+
+ctx.beginPath();
+
+ctx.arc(
+(i*137)%w,
+((i*97)+(performance.now()*.03))%h,
+2,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+}
+
+for(let i=0;i<8;i++){
+
+ctx.strokeStyle="rgba(0,255,255,.06)";
+ctx.lineWidth=2;
+
+ctx.beginPath();
+
+ctx.moveTo((i*180+performance.now()*.05)%w,0);
+
+ctx.lineTo((i*180+260)%w,h);
+
+ctx.stroke();
+
+}
+
+}
+
+function drawTrails(){
+
+trails.forEach(t=>{
+
+ctx.save();
+
+ctx.globalAlpha=t.life/20*.35;
+
+ctx.beginPath();
+
+ctx.arc(t.x,t.y,18,0,Math.PI*2);
+
+const g=ctx.createRadialGradient(
+t.x,t.y,2,
+t.x,t.y,18
+);
+
+g.addColorStop(0,"rgba(34,211,238,.9)");
+g.addColorStop(1,"rgba(34,211,238,0)");
+
+ctx.fillStyle=g;
+
+ctx.fill();
+
+ctx.restore();
+
+});
+
+}
+
+function drawPlayer(){
+
+if(!player)return;
+
+ctx.save();
+
+if(
+player.invincible>0 &&
+Math.floor(player.invincible/5)%2===0
+){
+ctx.globalAlpha=.35;
+}
+
+ctx.beginPath();
+
+ctx.arc(player.x,player.y,player.r+12,0,Math.PI*2);
+
+const glow=ctx.createRadialGradient(
+player.x,
+player.y,
+5,
+player.x,
+player.y,
+player.r+18
+);
+
+glow.addColorStop(0,"rgba(34,211,238,0.95)");
+glow.addColorStop(1,"rgba(34,211,238,0.15)");
+
+ctx.fillStyle=glow;
+
+ctx.fill();
+
+ctx.shadowBlur=35;
+ctx.shadowColor="#22d3ee";
+
+ctx.font="54px Arial";
+
+ctx.textAlign="center";
+ctx.textBaseline="middle";
+
+ctx.fillText(
+player.emoji,
+player.x,
+player.y+1
+);
+
+ctx.restore();
+
+}
+
+function drawLasers(){
+
+ctx.save();
+
+lasers.forEach(l=>{
+
+const x2=l.x+Math.cos(l.angle)*l.len;
+const y2=l.y+Math.sin(l.angle)*l.len;
+
+ctx.strokeStyle="#ff0055";
+ctx.lineWidth=5;
+
+ctx.shadowBlur=20;
+ctx.shadowColor="#ff0055";
+
+ctx.beginPath();
+
+ctx.moveTo(l.x,l.y);
+
+ctx.lineTo(x2,y2);
+
+ctx.stroke();
+
+});
+
+ctx.restore();
+
+}
+
+function drawTiles(){
+
+tiles.forEach(t=>{
+
+ctx.save();
+
+ctx.fillStyle=t.active?
+"rgba(34,197,94,.22)":
+"rgba(239,68,68,.22)";
+
+ctx.strokeStyle=t.active?
+"#22c55e":
+"#ef4444";
+
+ctx.lineWidth=3;
+
+ctx.fillRect(
+t.x,
+t.y,
+t.size,
+t.size
+);
+
+ctx.strokeRect(
+t.x,
+t.y,
+t.size,
+t.size
+);
+
+ctx.restore();
+
+});
+
+}
+
+function drawLetters(){
+
+letters.forEach(l=>{
+
+const scale=1+Math.sin(l.pulse)*0.08;
+
+ctx.save();
+
+ctx.translate(l.x,l.y);
+
+ctx.scale(scale,scale);
+
+ctx.beginPath();
+
+ctx.arc(0,0,l.r,0,Math.PI*2);
+
+const g=ctx.createRadialGradient(0,0,5,0,0,40);
+
+g.addColorStop(0,"#fde68a");
+g.addColorStop(1,"#f59e0b");
+
+ctx.fillStyle=g;
+
+ctx.shadowBlur=25;
+ctx.shadowColor="#facc15";
+
+ctx.fill();
+
+ctx.fillStyle="#111827";
+
+ctx.font="bold 30px Arial";
+
+ctx.textAlign="center";
+ctx.textBaseline="middle";
+
+ctx.fillText(l.char,0,1);
+
+ctx.restore();
+
+});
+
+}
+
+function drawParticles(){
+
+particles.forEach(p=>{
+
+ctx.save();
+
+ctx.globalAlpha=p.life/70;
+
+ctx.fillStyle=p.color;
+
+ctx.shadowBlur=12;
+ctx.shadowColor=p.color;
+
+ctx.beginPath();
+
+ctx.arc(
+p.x,
+p.y,
+p.size,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+ctx.restore();
+
+});
+
+}
+
+function distanceToSegment(px,py,x1,y1,x2,y2){
+
+const A=px-x1;
+const B=py-y1;
+const C=x2-x1;
+const D=y2-y1;
+
+const dot=A*C+B*D;
+
+const len=C*C+D*D;
+
+let t=0;
+
+if(len!==0){
+
+t=Math.max(0,Math.min(1,dot/len));
+
+}
+
+const ex=x1+t*C;
+const ey=y1+t*D;
+
+return Math.hypot(px-ex,py-ey);
+
+}
+
+update();
+</script>
+
+</body>
+</html>
